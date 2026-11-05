@@ -8,7 +8,13 @@ import type { ShiftFunction } from './types';
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-const ScrollViewRNRaw: Component<ScrollViewProps> = ScrollViewRN.render().type; // hack to get inner type of ScrollView
+// hack to get inner type of ScrollView: digs into RN internals at module load
+// time. RNOH (RN 0.72 fork) does not guarantee the same internal shape, and
+// this custom scroll component is only ever rendered on android
+// (FlatList.tsx passes renderScrollComponent only for android), so on harmony
+// fall back to the plain React.Component base instead of touching fork
+// internals — the class below is never instantiated there.
+const ScrollViewRNRaw: Component<ScrollViewProps> = Platform.OS === 'harmony' ? Component : ScrollViewRN.render().type;
 
 export class ScrollViewComponent extends ScrollViewRNRaw {
   constructor(props: ScrollViewProps) {

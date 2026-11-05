@@ -1,34 +1,15 @@
-const path = require('path');
-const escape = require('escape-string-regexp');
-const exclusionList = require('metro-config/src/defaults/exclusionList');
-const pak = require('../package.json');
+/**
+ * This source code is licensed under the MIT license found in the
+ * LICENSE-MIT file in the root directory of this source tree.
+ */
 
-const root = path.resolve(__dirname, '..');
+const {mergeConfig, getDefaultConfig} = require('@react-native/metro-config');
+const {createHarmonyMetroConfig} = require('@react-native-oh/react-native-harmony/metro.config');
 
-const modules = Object.keys({
-  ...pak.peerDependencies,
-});
-
-module.exports = {
-  projectRoot: __dirname,
-  watchFolders: [root],
-
-  // We need to make sure that only one version is loaded for peerDependencies
-  // So we block them at the root, and alias them to the versions in example's node_modules
-  resolver: {
-    blacklistRE: exclusionList(
-      modules.map(
-        (m) =>
-          new RegExp(`^${escape(path.join(root, 'node_modules', m))}\\/.*$`)
-      )
-    ),
-
-    extraNodeModules: modules.reduce((acc, name) => {
-      acc[name] = path.join(__dirname, 'node_modules', name);
-      return acc;
-    }, {}),
-  },
-
+/**
+ * @type {import("metro-config").ConfigT}
+ */
+const config = {
   transformer: {
     getTransformOptions: async () => ({
       transform: {
@@ -38,3 +19,7 @@ module.exports = {
     }),
   },
 };
+
+module.exports = mergeConfig(getDefaultConfig(__dirname), createHarmonyMetroConfig({
+  reactNativeHarmonyPackageName: '@react-native-oh/react-native-harmony',
+}), config);

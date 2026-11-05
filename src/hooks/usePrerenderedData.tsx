@@ -29,15 +29,26 @@ export const usePrerenderedData = ({data, keyExtractor, renderItem, scrollRef, o
   const [finalData, setFinalData] = useState<readonly any[]>([]);
   const [newData, setNewData] = useState<any[]>([]);
 
-  const heightsRef = useRef<Record<string, any>>({});
-  const getHeight = useCallback((list: any[], heights= heightsRef.current) => {
+  const heightsRef = useRef<Record<string, number>>({});
+  // offsetsRef.current[i] = data[0..i-1] 高度前缀和（与 getHeight(data.slice(0, i)) 等值，查询 O(1)）
+  const offsetsRef = useRef<number[]>([0]);
+  const getHeight = useCallback((list: any[], heights = heightsRef.current) => {
     return list.reduce((p, c) => p + heights[keyExtractor(c)], 0)
+  }, [keyExtractor]);
+
+  const buildOffsets = useCallback((list: readonly any[], heights: Record<string, number>) => {
+    const offsets = new Array<number>(list.length + 1);
+    offsets[0] = 0;
+    for(let i = 0; i < list.length; i++) {
+      offsets[i + 1] = offsets[i] + heights[keyExtractor(list[i])];
+    }
+    return offsets;
   }, [keyExtractor]);
 
   const shift = useCallback((newData: any[], oldHeights: Record<string, number>) => {
     const removedData = [];
     for (const d of finalData) {
-      if(!heightsRef.current[keyExtractor(d)]) {
+      if(heightsRef.current[keyExtractor(d)] === undefined) {
         removedData.push(d);
       } else {
         break;
@@ -55,7 +66,7 @@ export const usePrerenderedData = ({data, keyExtractor, renderItem, scrollRef, o
     }
     if(shiftValue.height !== 0) {
       scrollRef.current?.shift(shiftValue);
-      onUpdateData?.({heights: heightsRef.current, ...shiftValue});
+      onUpdateData?.({heights: {...heightsRef.current}, ...shiftValue});
     }
     setFinalData(data);
   }, [data, finalData, getHeight, keyExtractor, onUpdateData, scrollRef]);
@@ -65,23 +76,33 @@ export const usePrerenderedData = ({data, keyExtractor, renderItem, scrollRef, o
       return;
     }
     if(getItemLayout) {
-      const newD = data.filter((d) => !heightsRef.current[keyExtractor(d)]);
+      const newD = data.filter((d) => heightsRef.current[keyExtractor(d)] === undefined);
       const oldHeights = heightsRef.current;
       heightsRef.current = data.reduce((p,c,i) => {
         p[keyExtractor(c)] = getItemLayout(data as any[], i).length;
         return p;
       }, {});
+      offsetsRef.current = buildOffsets(data, heightsRef.current);
       shift(newD, oldHeights);
       return;
     }
-    setNewData(data.filter((d) => !heightsRef.current[keyExtractor(d)]));
-  }, [data, finalData, getHeight, getItemLayout, keyExtractor, onUpdateData, scrollRef, shift]);
-
-  useEffect(() => {
-    if(getItemLayout || !newData.length) {
+    const newD = data.filter((d) => heightsRef.current[keyExtractor(d)] === undefined);
+    if(newD.length > 0) {
+      setNewData(newD);
       return;
     }
-  }, [newData, getItemLayout]);
+    // 只删不增/纯重排（如 Reset）：所有项均已有测高记录，没有可预渲染的新项，
+    // onLayout 提交链路不会触发。这里同步走与 onLayout 完成后相同的清理+提交，
+    // 否则 finalData 永不更新（上游缺陷：Reset 后列表残留，下次变更才一次性补账）。
+    const oldHeights = heightsRef.current;
+    heightsRef.current = data.reduce((p,c) => {
+      const id = keyExtractor(c);
+      p[id] = oldHeights[id];
+      return p;
+    }, {});
+    offsetsRef.current = buildOffsets(data, heightsRef.current);
+    shift(newD, oldHeights);
+  }, [buildOffsets, data, finalData, getHeight, getItemLayout, keyExtractor, onUpdateData, scrollRef, shift]);
 
   const onLayout = useCallback<OnLayout>(({id, height}) => {
     heightsRef.current[id] = height;
@@ -97,22 +118,24 @@ export const usePrerenderedData = ({data, keyExtractor, renderItem, scrollRef, o
       p[id] = oldHeights[id];
       return p;
     }, {});
+    offsetsRef.current = buildOffsets(data, heightsRef.current);
     shift(newData, oldHeights);
     setNewData([]);
-  }, [data, keyExtractor, newData, shift]);
+  }, [buildOffsets, data, keyExtractor, newData, shift]);
 
   return {
     finalData,
     prerender: newData.length ? <View>
       {newData.map((d) => <Prerender key={keyExtractor(d)} id={keyExtractor(d)} onLayout={onLayout}>{renderItem({item: d, prerendering: true})}</Prerender>)}
     </View> : undefined,
-    getItemLayoutCustom: useCallback((data, index) => {
+    getItemLayoutCustom: useCallback((data: any, index: number) => {
       const d = data[index];
       const id = keyExtractor(d);
+      const offsets = offsetsRef.current;
       return {
         index,
         length: heightsRef.current[id],
-        offset: getHeight(data.slice(0, index)),
+        offset: offsets.length === data.length + 1 ? offsets[index] : getHeight(data.slice(0, index)),
       }
     }, [getHeight, keyExtractor]),
   };

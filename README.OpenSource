@@ -1,0 +1,11 @@
+[
+    {
+        "Name": "react-native-bidirectional-flatlist",
+        "License": "MIT License",
+        "License File": "https://github.com/steuerbot/react-native-bidirectional-flatlist/blob/main/LICENSE",
+        "Version Number": "0.6.0",
+        "Owner": "liu_yihai",
+        "Upstream URL": "https://github.com/steuerbot/react-native-bidirectional-flatlist",
+        "Description": "A FlatList which can handle prepending and appending and still holding the current position."
+    }
+]
