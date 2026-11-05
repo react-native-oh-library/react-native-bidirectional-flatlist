@@ -10,6 +10,6 @@ export type FlatListType = typeof FlatListRN & {shift: ShiftFunction};
 
 export type KeyExtractor = <T>(item: T) => string;
 
-export type BidirectionalFlatListProps = FlatListProps<any> & {renderItem: RenderItem, onUpdateData?: OnUpdateData, keyExtractor: KeyExtractor};
+export type BidirectionalFlatListProps<T = unknown> = FlatListProps<T> & {renderItem: RenderItem, onUpdateData?: OnUpdateData, keyExtractor: KeyExtractor};
 
 

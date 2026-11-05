@@ -1,28 +1,35 @@
 {
+  "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "./",
-    "paths": {
-      "react-native-bidirectional-flatlist": ["./src/index"]
-    },
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "esModuleInterop": true,
-    "importsNotUsedAsValues": "error",
-    "forceConsistentCasingInFileNames": true,
+    "noEmit": false,
+    "declaration": true,
     "jsx": "react",
-    "lib": ["esnext"],
-    "module": "esnext",
-    "moduleResolution": "node",
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true,
-    "noImplicitUseStrict": false,
-    "noStrictGenericChecks": false,
-    "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "esnext"
-  }
+    "sourceMap": true,
+    "removeComments": false,
+    "allowImportingTsExtensions": false
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/__tests__/*",
+    "node_modules/**",
+    "oh_modules/**",
+    "example*/**",
+    "harmony*/**",
+    "android/**",
+    "ios/**",
+    "windows/**",
+    "macos/**",
+    "linux/**",
+    "dist/**",
+    "build/**",
+    "out/**",
+    "lib/**",
+    "**/.*/**",
+    "__tests__/**",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ]
 }
